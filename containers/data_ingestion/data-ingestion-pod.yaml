@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: data-ingestion-pod
+  labels:
+    app: data-ingestion
+spec:
+  containers:
+  - name: ingestion-container
+    image: data-ingestion:latest  # Your built image from Phase 1
+    imagePullPolicy: Never
+    env:
+    - name: DAYS
+      value: "7"  # Override env var
+    volumeMounts:
+    - name: data-volume
+      mountPath: /data
+  volumes:
+  - name: data-volume
+    hostPath:
+      path: /tmp/ingestion-output  # Saves to host machine
