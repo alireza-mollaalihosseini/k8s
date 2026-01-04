@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forecast-deployment
+spec:
+  replicas: 2  # 2 pods for redundancy
+  selector:
+    matchLabels:
+      app: forecast
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0  # Zero-downtime updates
+  template:
+    metadata:
+      labels:
+        app: forecast
+    spec:
+      containers:
+      - name: forecast-container
+        image: forecast-service:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8000  # If you add API later
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"

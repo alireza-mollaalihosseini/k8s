@@ -9,9 +9,14 @@ spec:
   - name: ingestion-container
     image: data-ingestion:latest  # Your built image from Phase 1
     imagePullPolicy: Never
-    env:
-    - name: DAYS
-      value: "7"  # Override env var
+    # env:
+    # - name: DAYS
+    #   value: "7"  # Override env var
+    envFrom:
+    - configMapRef:
+        name: ingestion-config
+    - secretRef:
+        name: ingestion-secret
     volumeMounts:
     - name: data-volume
       mountPath: /data

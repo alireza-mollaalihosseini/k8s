@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ingestion-config
+data:
+  LATITUDE: "52.52"   # Berlin
+  LONGITUDE: "13.41"
+  DAYS: "30"
+  API_URL: "https://archive-api.open-meteo.com/v1/archive"
