@@ -26,14 +26,14 @@ spec:
         livenessProbe:
           httpGet:
             path: /health      # Basic: process responding?
-            port: 8080
+            port: 8000
           initialDelaySeconds: 30   # Wait for startup
           periodSeconds: 10         # Check every 10s
           failureThreshold: 3       # Restart after 3 fails
         readinessProbe:
           httpGet:
             path: /ready       # Advanced: model loaded?
-            port: 8080
+            port: 8000
           initialDelaySeconds: 30
           periodSeconds: 10
           failureThreshold: 5
