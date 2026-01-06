@@ -17,10 +17,26 @@ spec:
       labels:
         app: forecast
     spec:
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: data-pvc
+      securityContext:
+          runAsUser: 0
+          runAsGroup: 0
+          fsGroup: 0
       containers:
       - name: forecast-container
         image: forecast-service:latest
         imagePullPolicy: Never
+        volumeMounts:
+        - name: data-volume
+          mountPath: /data
+        env:
+        - name: DATA_DIR
+          value: "/data"
+        - name: MODEL_PATH
+          value: "/data/lstm_weather.pt"
         ports:
         - containerPort: 8000  # If you add API later
         livenessProbe:

@@ -1,5 +1,4 @@
 import os
-import glob
 import torch
 import torch.nn as nn
 import numpy as np
@@ -22,9 +21,6 @@ FEATURES = [
     'temperature_2m_min (°C)',
     'wind_speed_10m_max (km/h)'
 ]
-
-DATA_DIR = os.getenv("DATA_DIR", "/data")
-MODEL_PATH = os.getenv("MODEL_PATH", "/data/lstm_weather.pt")
 
 # -------------------------
 # LSTM Model Definition
@@ -51,7 +47,7 @@ class LSTMModel(nn.Module):
 async def load_model():
     global model, scaler_X, scaler_y, SEQ_LENGTH
 
-    checkpoint = torch.load(MODEL_PATH, weights_only=False)
+    checkpoint = torch.load("lstm_weather.pt", weights_only=False)
 
     model = LSTMModel(
         input_size=checkpoint["input_size"],
@@ -115,29 +111,18 @@ async def ready():
 @app.get("/predict")
 async def predict(
     hours: int = 24,
-    csv_path: str | None = None  # Now optional
+    csv_path: str = "weather_20260103.csv"
 ):
     if model is None:
         raise HTTPException(status_code=503, detail="Model not ready")
 
-    if csv_path is None:
-        # Auto-find latest weather_*.csv in /data
-        csv_files = glob.glob(f"{DATA_DIR}/weather_*.csv")
-        if not csv_files:
-            raise HTTPException(status_code=400, detail="No weather CSV files found")
-        csv_path = max(csv_files, key=os.path.getctime)
+    if not os.path.exists(csv_path):
+        raise HTTPException(status_code=400, detail="CSV file not found")
 
-    # Support relative filenames (e.g., ?csv_path=weather_20260106.csv)
-    full_path = csv_path if os.path.isabs(csv_path) else os.path.join(DATA_DIR, csv_path)
-
-    if not os.path.exists(full_path):
-        raise HTTPException(status_code=400, detail=f"CSV file not found: {full_path}")
-
-    preds = forecast_recursive(hours, full_path)
+    preds = forecast_recursive(hours, csv_path)
 
     return {
         "hours": hours,
-        "csv_used": os.path.basename(full_path),
         "forecast_wind_speed_kmh": preds
     }
 
