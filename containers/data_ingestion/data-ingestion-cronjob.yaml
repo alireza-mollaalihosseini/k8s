@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: data-ingestion
+spec:
+  schedule: "0 0 * * *"  # Daily at midnight (adjust as needed)
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          volumes:
+          - name: data-volume
+            persistentVolumeClaim:
+              claimName: data-pvc
+          containers:
+          - name: ingestion
+            image: data-ingestion:latest  # Your ingestion image
+            imagePullPolicy: Never
+            command: ["python", "/app/app.py"]
+            env:
+            - name: DATA_DIR
+              value: "/data"
+            volumeMounts:
+            - mountPath: /data
+              name: data-volume
+          restartPolicy: OnFailure

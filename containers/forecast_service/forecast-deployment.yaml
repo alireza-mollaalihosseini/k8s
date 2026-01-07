@@ -36,7 +36,7 @@ spec:
         - name: DATA_DIR
           value: "/data"
         - name: MODEL_PATH
-          value: "/data/lstm_weather.pt"
+          value: "/app/lstm_weather.pt"
         ports:
         - containerPort: 8000  # If you add API later
         livenessProbe:

@@ -12,10 +12,17 @@ spec:
       labels:
         app: data-ingestion
     spec:
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: data-pvc
       containers:
       - name: ingestion-container
         image: data-ingestion:latest
         imagePullPolicy: Never
+        env:
+        - name: DATA_DIR
+          value: "/data"
         envFrom:
         - configMapRef:
             name: ingestion-config
@@ -24,7 +31,7 @@ spec:
         volumeMounts:
         - name: data-volume
           mountPath: /data
-      volumes:
-      - name: data-volume
-        hostPath:
-          path: /tmp/ingestion-output  # Host folder for persistence
+      # volumes:
+      # - name: data-volume
+      #   hostPath:
+      #     path: /tmp/ingestion-output  # Host folder for persistence
