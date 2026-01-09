@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: renewable-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /   # Optional: strips path prefix
+spec:
+  rules:
+  - host: renewable.local   # Custom hostname (we'll map it)
+    http:
+      paths:
+      - path: /forecast       # All /forecast/* → forecast-service
+        pathType: Prefix
+        backend:
+          service:
+            name: forecast-service
+            port:
+              number: 80         # Your Service's port (not container port!)
+      # Uncomment if you add ingestion service later
+      # - path: /ingest
+      #   pathType: Prefix
+      #   backend:
+      #     service:
+      #       name: data-ingestion-service
+      #       port:
+      #         number: 80

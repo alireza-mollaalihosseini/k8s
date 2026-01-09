@@ -27,3 +27,12 @@ kubectl create job --from=cronjob/data-ingestion manual-ingestion
 kubectl logs -f job/manual-ingestion
 
 kubectl rollout restart deployment/forecast-deployment
+
+
+# ingress
+minikube addons enable ingress
+minikube addons list
+kubectl apply -f ingress.yaml
+kubectl get ingress
+kubectl describe ingress renewable-ingress
+minikube ip

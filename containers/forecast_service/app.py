@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 import uvicorn
+import traceback
 
 # -------------------------
 # FastAPI app
@@ -70,9 +71,21 @@ async def load_model():
 # Helpers
 # -------------------------
 def load_latest_sequence(csv_path: str):
-    df = pd.read_csv(csv_path, skiprows=2)
+    # Skip 2 metadata lines — Line 3 becomes header
+    df = pd.read_csv(csv_path, skiprows=2, encoding="ISO-8859-1")
+    
+    # Exact FEATURES from Open-Meteo CSV
+    FEATURES = [
+        'temperature_2m_max (°C)',
+        'temperature_2m_min (°C)',
+        'wind_speed_10m_max (km/h)'
+    ]
+    
     df = df[FEATURES].dropna()
-
+    
+    if len(df) < SEQ_LENGTH:
+        raise ValueError(f"Not enough data rows ({len(df)}) for SEQ_LENGTH {SEQ_LENGTH}")
+    
     values = df.values[-SEQ_LENGTH:]
     values_scaled = scaler_X.transform(values)
 
@@ -120,26 +133,63 @@ async def predict(
     if model is None:
         raise HTTPException(status_code=503, detail="Model not ready")
 
-    if csv_path is None:
-        # Auto-find latest weather_*.csv in /data
-        csv_files = glob.glob(f"{DATA_DIR}/weather_*.csv")
-        if not csv_files:
-            raise HTTPException(status_code=400, detail="No weather CSV files found")
-        csv_path = max(csv_files, key=os.path.getctime)
+    # if csv_path is None:
+    #     # Auto-find latest weather_*.csv in /data
+    #     csv_files = glob.glob(f"{DATA_DIR}/weather_*.csv")
+    #     if not csv_files:
+    #         raise HTTPException(status_code=400, detail="No weather CSV files found")
+    #     csv_path = max(csv_files, key=os.path.getctime)
 
-    # Support relative filenames (e.g., ?csv_path=weather_20260106.csv)
-    full_path = csv_path if os.path.isabs(csv_path) else os.path.join(DATA_DIR, csv_path)
+    # # Support relative filenames (e.g., ?csv_path=weather_20260106.csv)
+    # full_path = csv_path if os.path.isabs(csv_path) else os.path.join(DATA_DIR, csv_path)
 
-    if not os.path.exists(full_path):
-        raise HTTPException(status_code=400, detail=f"CSV file not found: {full_path}")
+    # if not os.path.exists(full_path):
+    #     raise HTTPException(status_code=400, detail=f"CSV file not found: {full_path}")
 
-    preds = forecast_recursive(hours, full_path)
+    # preds = forecast_recursive(hours, full_path)
 
-    return {
-        "hours": hours,
-        "csv_used": os.path.basename(full_path),
-        "forecast_wind_speed_kmh": preds
-    }
+    # return {
+    #     "hours": hours,
+    #     "csv_used": os.path.basename(full_path),
+    #     "forecast_wind_speed_kmh": preds
+    # }
+    try:
+        if csv_path is None:
+            csv_files = glob.glob(f"{DATA_DIR}/weather_*.csv")
+            if not csv_files:
+                raise HTTPException(status_code=400, detail="No weather CSV files found")
+            csv_path = max(csv_files, key=os.path.getctime)
+
+        full_path = csv_path if os.path.isabs(csv_path) else os.path.join(DATA_DIR, csv_path)
+
+        if not os.path.exists(full_path):
+            raise HTTPException(status_code=400, detail=f"CSV file not found: {full_path}")
+
+        # Temporary debug: load and inspect
+        df = pd.read_csv(full_path, skiprows=2, encoding="ISO-8859-1")  # Try without skiprows first
+        print("CSV Columns:", list(df.columns))  # Will appear in pod logs
+        print("CSV Rows:", len(df))
+        print("First few rows:\n", df.head())
+
+        df = df[FEATURES].dropna()
+        
+        if len(df) < SEQ_LENGTH:
+            raise ValueError(f"Not enough rows after dropna: {len(df)} < {SEQ_LENGTH}")
+
+        preds = forecast_recursive(hours, full_path)
+
+        np.savetxt(f"{DATA_DIR}/predictions.txt", np.array(preds))
+
+        return {
+            "hours": hours,
+            "csv_used": os.path.basename(full_path),
+            "forecast_wind_speed_kmh": preds
+        }
+
+    except Exception as e:
+        error_detail = traceback.format_exc()  # Full traceback
+        print("Prediction Error:\n", error_detail)  # Logs full error
+        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}\n{error_detail}")
 
 # -------------------------
 # Run server
