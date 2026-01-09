@@ -36,3 +36,4 @@ kubectl apply -f ingress.yaml
 kubectl get ingress
 kubectl describe ingress renewable-ingress
 minikube ip
+
