@@ -1,2 +1,7 @@
 *.csv
 *.pt
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
